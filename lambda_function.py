@@ -1,4 +1,20 @@
 import json
+import boto3
+from datetime import datetime
+
+# Get the service resource
+dynamodb = boto3.resource('dynamodb')
+
+def insert_data(log):
+    now = datetime.now()
+    log_name = 'LOG-' + str(now)
+    table = dynamodb.Table('Logs')
+    table.put_item(
+        Item={
+            'Log_Name': log_name,
+            'Log_Message': log
+        }
+    )
 
 def lambda_handler(event, context):
     # Need to make sure it saves data to Dynamo
@@ -18,6 +34,7 @@ def lambda_handler(event, context):
     
     try:
         data = json.loads(event['body'])
+        insert_data(data['log'])
         logged['logged'] = data['log']
         
         return {
@@ -25,7 +42,7 @@ def lambda_handler(event, context):
             'body': json.dumps(logged)
         }
     except Exception as e:
-        logged['logged'] = 'Failed'
+        logged['error'] = str(e)
         return {
             'statusCode': 400,
             'body': json.dumps(logged)
